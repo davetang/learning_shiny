@@ -8,8 +8,12 @@ ui <- fluidPage(
     sidebarPanel(
       fileInput("file", "Upload RSEM gene TPM file",
                 accept = c(".txt", ".tsv", ".csv", ".gz")),
-      selectizeInput("selected_genes", "Select genes for heatmap",
-                     choices = NULL, multiple = TRUE),
+      
+      # Replaces textInput + dynamic checkbox with live search input
+      selectizeInput("selected_genes", "Search and select genes",
+                     choices = NULL, multiple = TRUE, 
+                     options = list(placeholder = 'Type to search genes...')),
+      
       actionButton("plot_btn", "Generate heatmap")
     ),
     mainPanel(
@@ -34,10 +38,11 @@ server <- function(input, output, session) {
     df
   })
   
-  # Update gene selector dynamically
+  # Update search box dynamically after file upload
   observe({
     df <- rsem_data()
     gene_names <- df$gene_id
+    
     updateSelectizeInput(session, "selected_genes",
                          choices = gene_names,
                          server = TRUE)
@@ -54,14 +59,14 @@ server <- function(input, output, session) {
       filtered_df <- df[df$gene_id %in% input$selected_genes, ]
       
       # Extract expression matrix
-      rownames(filtered_df) <- filtered_df$gene_id
       expr_matrix <- filtered_df[, -1]  # remove gene_id column
       
       # Convert to numeric matrix
       expr_matrix <- as.matrix(sapply(expr_matrix, as.numeric))
+      rownames(expr_matrix) <- filtered_df$gene_id
       
       # Plot heatmap
-      pheatmap(expr_matrix, scale = "row", fontsize_row = 8, fontsize_col = 10)
+      pheatmap(expr_matrix, scale = "row", fontsize_row = 10, fontsize_col = 10)
     })
   })
 }
