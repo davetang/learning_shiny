@@ -9,10 +9,15 @@ ui <- fluidPage(
       fileInput("file", "Upload RSEM gene TPM file",
                 accept = c(".txt", ".tsv", ".csv", ".gz")),
       
-      # Replaces textInput + dynamic checkbox with live search input
       selectizeInput("selected_genes", "Search and select genes",
-                     choices = NULL, multiple = TRUE, 
+                     choices = NULL, multiple = TRUE,
                      options = list(placeholder = 'Type to search genes...')),
+      
+      numericInput("fontsize_row", "Font size (rows):", value = 10, min = 1, max = 30),
+      numericInput("fontsize_col", "Font size (columns):", value = 10, min = 1, max = 30),
+      
+      checkboxInput("cluster_rows", "Cluster rows", value = TRUE),
+      checkboxInput("cluster_cols", "Cluster columns", value = TRUE),
       
       actionButton("plot_btn", "Generate heatmap")
     ),
@@ -23,7 +28,6 @@ ui <- fluidPage(
 )
 
 server <- function(input, output, session) {
-  # Reactive expression to load and preprocess data
   rsem_data <- reactive({
     req(input$file)
     df <- read.delim(input$file$datapath, stringsAsFactors = FALSE, check.names = FALSE)
@@ -38,35 +42,32 @@ server <- function(input, output, session) {
     df
   })
   
-  # Update search box dynamically after file upload
   observe({
     df <- rsem_data()
     gene_names <- df$gene_id
-    
     updateSelectizeInput(session, "selected_genes",
                          choices = gene_names,
                          server = TRUE)
   })
   
-  # Generate heatmap
   output$heatmap <- renderPlot({
-    input$plot_btn  # triggers on click
+    input$plot_btn
     isolate({
       req(input$selected_genes)
       df <- rsem_data()
       
-      # Filter to selected genes
       filtered_df <- df[df$gene_id %in% input$selected_genes, ]
       
-      # Extract expression matrix
-      expr_matrix <- filtered_df[, -1]  # remove gene_id column
-      
-      # Convert to numeric matrix
+      expr_matrix <- filtered_df[, -1]
       expr_matrix <- as.matrix(sapply(expr_matrix, as.numeric))
       rownames(expr_matrix) <- filtered_df$gene_id
       
-      # Plot heatmap
-      pheatmap(expr_matrix, scale = "row", fontsize_row = 10, fontsize_col = 10)
+      pheatmap(expr_matrix,
+               scale = "row",
+               fontsize_row = input$fontsize_row,
+               fontsize_col = input$fontsize_col,
+               cluster_rows = input$cluster_rows,
+               cluster_cols = input$cluster_cols)
     })
   })
 }
