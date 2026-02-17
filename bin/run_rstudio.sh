@@ -13,15 +13,16 @@ if [[ ! -d ${PACKAGE_DIR} ]]; then
 fi
 
 docker run \
-   --name ${NAME} \
-   -d \
-   -p ${PORT}:8787 \
-   -v "${PACKAGE_DIR}":/packages \
-   -v "$(pwd)":/home/rstudio/work \
-   -e PASSWORD=password \
-   -e USERID="$(id -u)" \
-   -e GROUPID="$(id -g)" \
-   ${IMAGE}
+  --rm \
+  --name ${NAME} \
+  -d \
+  -p ${PORT}:8787 \
+  -v "${PACKAGE_DIR}":/packages \
+  -v "$(pwd)":/home/rstudio/work \
+  -e PASSWORD=password \
+  -e USERID="$(id -u)" \
+  -e GROUPID="$(id -g)" \
+  ${IMAGE}
 
 >&2 echo ${NAME} listening on port ${PORT}
 
